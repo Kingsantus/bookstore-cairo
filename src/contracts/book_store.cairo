@@ -48,21 +48,31 @@ pub mod BookStore {
             self.emit(AddBook { book: title, msg: 'new Book added' });
         }
 
-        fn update_books(
-            ref self: ContractState, title: felt252, book: Book, price: u16, quantity: u8,
-        ) {
+        fn update_books(ref self: ContractState, title: felt252, book: Book, price: u16, quantity: u8) {
             match self.books.entry(title).read() {
-                Option::Some(book_data) => {
-                    let mut book = book_data;
-                    book.quantity = quantity;
-                    book.price = price;
-                    self.books.entry(title).write(book);
-                    self.emit(Event::UpdateBook(UpdateBook { book: title, msg: 'Book info updated' }));
-                },
-                Option::None => {},
+                Option::Some(mut book_exist) => {
+                    book_exist.price = price;
+                    book_exist.quantity = quantity;
+                    self.books.entry(title).write(book_exist);
+                    
+                    self.emit(
+                        Event::UpdateBook(UpdateBook {
+                            book: title,
+                            msg: 'Book updated',
+                        })
+                    );
+                }, 
+                Option::None => {
+                    self.emit(
+                        Event::UpdateBook(UpdateBook {
+                            book: title,
+                            msg: 'Book not found',
+                        })
+                    );
+                }
             }
-            {}
         }
+
         fn remove_books(ref self: ContractState, title: felt252) {
             self
                 .books
