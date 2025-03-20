@@ -1,10 +1,14 @@
 use crate::Book;
 use crate::interfaces::Ibook_store::IBookStore;
 
-#[starknet::contracts]
+#[starknet::contract]
 pub mod BookStore {
-    use core::starknet::storage::{Map};
-    use super::Book;
+    use starknet::event::EventEmitter;
+use super::Book;
+        use core::starknet::storage::{Map, StoragePathEntry};
+        use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
+        use core::starknet::get_caller_address;
+
 
     #[storage]
     struct Storage {
@@ -37,4 +41,34 @@ pub mod BookStore {
         RemovedBook: RemovedBook,
     }
 
+    #[abi(embed_v0)]
+    impl BookStoreImpl of super::IBookStore<ContractState> {
+        fn add_book(ref self: ContractState, book: Book) {
+            self.books.entry(book).write(true);
+            self.emit(
+                AddBook {
+                    book,
+                    msg: 'new Book added',
+                }
+            );
+        }
+        fn update_books(ref self: ContractState, book: Book) {
+            self.books.entry(book).write(true);
+            self.emit(
+                UpdateBook {
+                    book,
+                    msg: 'Book info updated',
+                }
+            );
+        }
+        fn remove_books(ref self: ContractState, book: Book) {
+            self.books.entry(book).write(false);
+            self.emit(
+                RemovedBook {
+                    book,
+                    msg: 'Book removed',
+                }
+            );
+        }
+    }
 }
