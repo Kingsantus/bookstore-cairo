@@ -33,12 +33,19 @@ pub mod BookStore {
         msg: felt252,
     }
 
+    #[derive(Drop, Serde, starknet::Event)]
+    struct BookAvailable {
+        book: felt252,
+        msg: felt252,
+    }
+
     #[event]
     #[derive(Drop, Serde, starknet::Event)]
     enum Event {
         AddBook: AddBook,
         UpdateBook: UpdateBook,
         RemovedBook: RemovedBook,
+        BookAvailable: BookAvailable,
     }
 
     #[abi(embed_v0)]
@@ -79,6 +86,21 @@ pub mod BookStore {
                 .entry(title)
                 .write(Book { title: '', author: '', description: '', price: 0, quantity: 0 });
             self.emit(RemovedBook { book: title, msg: 'Book removed' });
+        }
+
+        fn get_book(ref self: ContractState, title: felt252) {
+            let check = self.books.entry(title).read();
+            if check {
+                self.emit(BookAvailable {
+                    book: title,
+                    msg: "Available",
+                });
+            } else {
+                self.emit(BookAvailable {
+                    book: title,
+                    msg: "Available",
+                });
+            }
         }
     }
 }
