@@ -3,38 +3,38 @@ use crate::interfaces::Ibook_store::IBookStore;
 
 #[starknet::contract]
 pub mod BookStore {
+    use starknet::storage::StorageMapReadAccess;
     use starknet::event::EventEmitter;
-use super::Book;
-        use core::starknet::storage::{Map, StoragePathEntry};
-        use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-        use core::starknet::get_caller_address;
+    use super::Book;
+    use core::starknet::storage::{Map, StoragePathEntry};
+    use core::starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
 
 
     #[storage]
     struct Storage {
-        books: Map<Book, bool>
+        books: Map<felt252, Book>,
     }
 
-    #[derive(Copy, Drop, starknet::Event)]
+    #[derive(Drop, Serde, starknet::Event)]
     struct AddBook {
-        book: Book,
+        book: felt252,
         msg: felt252,
     }
 
-    #[derive(Copy, Drop, starknet::Event)]
+    #[derive(Drop, Serde, starknet::Event)]
     struct UpdateBook {
-        book: Book,
+        book: felt252,
         msg: felt252,
     }
 
-    #[derive(Copy, Drop, starknet::Event)]
+    #[derive(Drop, Serde, starknet::Event)]
     struct RemovedBook {
-        book: Book,
+        book: felt252,
         msg: felt252,
     }
 
     #[event]
-    #[derive(Copy, Drop, starknet::Event)]
+    #[derive(Drop, Serde, starknet::Event)]
     enum Event {
         AddBook: AddBook,
         UpdateBook: UpdateBook,
@@ -43,32 +43,32 @@ use super::Book;
 
     #[abi(embed_v0)]
     impl BookStoreImpl of super::IBookStore<ContractState> {
-        fn add_book(ref self: ContractState, book: Book) {
-            self.books.entry(book).write(true);
-            self.emit(
-                AddBook {
-                    book,
-                    msg: 'new Book added',
-                }
-            );
+        fn add_book(ref self: ContractState, title: felt252, book: Book) {
+            self.books.entry(title).write(book);
+            self.emit(AddBook { book: title, msg: 'new Book added' });
         }
-        fn update_books(ref self: ContractState, book: Book) {
-            self.books.entry(book).write(true);
-            self.emit(
-                UpdateBook {
-                    book,
-                    msg: 'Book info updated',
-                }
-            );
+
+        fn update_books(
+            ref self: ContractState, title: felt252, book: Book, price: u16, quantity: u8,
+        ) {
+            match self.books.entry(title).read() {
+                Option::Some(book_data) => {
+                    let mut book = book_data;
+                    book.quantity = quantity;
+                    book.price = price;
+                    self.books.entry(title).write(book);
+                    self.emit(Event::UpdateBook(UpdateBook { book: title, msg: 'Book info updated' }));
+                },
+                Option::None => {},
+            }
+            {}
         }
-        fn remove_books(ref self: ContractState, book: Book) {
-            self.books.entry(book).write(false);
-            self.emit(
-                RemovedBook {
-                    book,
-                    msg: 'Book removed',
-                }
-            );
+        fn remove_books(ref self: ContractState, title: felt252) {
+            self
+                .books
+                .entry(title)
+                .write(Book { title: '', author: '', description: '', price: 0, quantity: 0 });
+            self.emit(RemovedBook { book: title, msg: 'Book removed' });
         }
     }
 }
