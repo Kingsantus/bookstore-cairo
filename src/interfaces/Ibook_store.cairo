@@ -1,11 +1,4 @@
-#[derive(Copy, Drop, Serde)]
-pub struct Book {
-    title: felt252,
-    author: felt252,
-    description: felt252,
-    price: u16,
-    quantity: u8,
-}
+use crate::Book;
 
 #[starknet::interface]
 pub trait IBookStore<TContractState> {
